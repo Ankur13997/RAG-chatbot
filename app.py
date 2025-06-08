@@ -1,19 +1,15 @@
 from flask import Flask, request, render_template, jsonify
 import os
-from rag import load_index_and_docs, get_answer, ingest_all
+from rag import load_index_and_docs, get_answer
 
 app = Flask(__name__)
 
-# Auto-build index if it doesn't exist
-VECTOR_INDEX_PATH = "vectorstore/index.faiss"
-DOCS_PICKLE_PATH = "vectorstore/docs.pkl"
-
-if not os.path.exists(VECTOR_INDEX_PATH) or not os.path.exists(DOCS_PICKLE_PATH):
-    print("⚙️ Index not found. Building vector index...")
-    ingest_all()
-
-# Load index and documents
-index, docs = load_index_and_docs()
+# Only load prebuilt index, don't ingest on Render
+try:
+    index, docs = load_index_and_docs()
+except Exception as e:
+    print("❌ Failed to load FAISS index:", e)
+    index, docs = None, None
 
 @app.route("/")
 def index_page():
@@ -21,6 +17,9 @@ def index_page():
 
 @app.route("/ask", methods=["POST"])
 def ask():
+    if not index or not docs:
+        return jsonify({"answer": "Index not available. Please run ingestion locally first."})
+
     try:
         question = request.json.get("question", "").strip()
         if not question:
@@ -30,6 +29,10 @@ def ask():
     except Exception as e:
         return jsonify({"answer": f"Server error: {str(e)}"}), 500
 
+@app.route("/ping")
+def ping():
+    return "pong", 200
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port)

@@ -14,3 +14,5 @@ python app.py
   - Uploaded insurance PDFs
 - Replies with "I don't know" when information is out-of-scope
 - Simple and clean chatbot UI
+
+- ![image](https://github.com/user-attachments/assets/afe15570-7fcd-4fe4-a619-3fe82deaad92)

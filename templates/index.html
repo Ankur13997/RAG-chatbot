@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RAG Chatbot</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fa;
+    display: flex;
+    flex-direction: column;
+    height: 90vh;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .chatbox {
+    flex: 1;
+    max-width: 600px;
+    margin: 0 auto 10px auto;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    overflow-y: auto;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bubble {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: 20px;
+    line-height: 1.4;
+    font-size: 1rem;
+    word-wrap: break-word;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .user {
+    align-self: flex-end;
+    background: #3b82f6;
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .bot {
+    align-self: flex-start;
+    background: #e0e7ff;
+    color: #1e293b;
+    border-bottom-left-radius: 4px;
+  }
+
+  .input-area {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    gap: 10px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    outline-offset: 2px;
+    transition: border-color 0.3s;
+  }
+
+  input[type="text"]:focus {
+    border-color: #3b82f6;
+  }
+
+  button {
+    background: #3b82f6;
+    border: none;
+    color: white;
+    padding: 0 24px;
+    font-size: 1rem;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  button:hover {
+    background: #2563eb;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="chatbox" id="chatbox" aria-live="polite" aria-label="Chat messages">
+  <div class="bubble bot"><strong>Support Bot:</strong> Hi! Ask me anything about Angel One support or your health insurance.</div>
+</div>
+
+<div class="input-area">
+  <input type="text" id="question" placeholder="Type your question..." autocomplete="off" />
+  <button id="sendBtn" aria-label="Send question">Send</button>
+</div>
+
+<script>
+  const questionInput = document.getElementById('question');
+  const chatbox = document.getElementById('chatbox');
+  const sendBtn = document.getElementById('sendBtn');
+
+  function scrollToBottom() {
+    chatbox.scrollTop = chatbox.scrollHeight;
+  }
+
+  async function askQuestion() {
+    const question = questionInput.value.trim();
+    if (!question) return;
+
+    // Append user bubble
+    const userBubble = document.createElement('div');
+    userBubble.className = 'bubble user';
+    userBubble.textContent = question;
+    chatbox.appendChild(userBubble);
+
+    scrollToBottom();
+
+    // Clear input immediately after sending question
+    questionInput.value = '';
+    questionInput.disabled = true;
+    sendBtn.disabled = true;
+
+    try {
+      const response = await fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+      const data = await response.json();
+
+      const botBubble = document.createElement('div');
+      botBubble.className = 'bubble bot';
+      botBubble.textContent = data.answer || 'Sorry, no answer found.';
+      chatbox.appendChild(botBubble);
+      scrollToBottom();
+    } catch (err) {
+      const errorBubble = document.createElement('div');
+      errorBubble.className = 'bubble bot';
+      errorBubble.textContent = 'Error: Could not get response.';
+      chatbox.appendChild(errorBubble);
+      scrollToBottom();
+    } finally {
+      questionInput.disabled = false;
+      sendBtn.disabled = false;
+      questionInput.focus();
+    }
+  }
+
+  // Send question on button click
+  sendBtn.addEventListener('click', askQuestion);
+
+  // Send question on enter key
+  questionInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      askQuestion();
+    }
+  });
+</script>
+
+</body>
+</html>
